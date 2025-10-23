@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <title>Quiz</title>
+    <title>CSS Quiz Challenge</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
@@ -321,7 +321,7 @@
     <div class="main-class-container">
         <main class="container">
             <div id="loginSection" class="card">
-                <h1>Quiz CSS 2025</h1>
+                <h1>CSS Quiz Challenge</h1> 
                 <p class="muted-text">Created by Rameel Tanveer</p>
 
                 <input id="nameInput" type="text" placeholder="Type your name" autocomplete="off" />
@@ -356,8 +356,8 @@
                     <div id="optionsList" class="options-list aria-live-polite">
                         </div>
                     <div class="navigation">
-                        <button id="prevBtn" class="btn disabled">Previous</button>
-                        <button id="nextBtn" class="btn disabled">Next</button>
+                        <button id="prevBtn" class="btn disabled" disabled>Previous</button>
+                        <button id="nextBtn" class="btn disabled" disabled>Next</button>
                     </div>
                 </div>
             </section>
@@ -379,7 +379,7 @@
             </div>
         </div>
 
-        <audio id="fireworksAudio" src="fireworks-10-419029.mp3"></audio>
+        <audio id="fireworksAudio" src="fireworks-10-419029.mp3" loop></audio>
 
         <footer>
             <p class="muted-text">Designed by <a href="https://github.com/rameeltanveer-dev"><strong>Rameel Tanveer</strong></a> | &copy; 2025 All rights reserved.</p>
@@ -387,7 +387,7 @@
     </div>
     
     <script>
-        /* script.js — Final quiz logic with ALL FIXES applied */
+        /* script.js — FINAL CODE WITH ALL FIXES (Audio, Celebration, Local Storage, and Answer Comparison) */
 
         /* ---------- CONFIG ---------- */
         const TOTAL_MINUTES = 40;
@@ -396,8 +396,8 @@
         const FIXED_WHATSAPP = '03196393269';
         const FIXED_EMAIL = 'rameeltanveer19@gmail.com';
 
-        // 💡 TESTING MODE: 'true' rakhne se Local Storage ka check bypass ho jaayega.
-        const IS_TESTING_MODE = true; 
+        // FIX: Testing Mode OFF (Agar aap chahte hain ke koi bhi baar baar quiz de sake, toh ise 'true' kar dein)
+        const IS_TESTING_MODE = false; 
 
         /* ---------- QUESTION BANK (40+ items) ---------- */
         const BANK = [
@@ -450,10 +450,9 @@
         let totalSecondsLeft = TOTAL_SECONDS, perQuestionSecondsLeft = PER_QUESTION_SECONDS;
         let globalTimerId = null, questionTimerId = null, answeredThisQ = false;
 
-        /* ---------- UI refs (IDs FIXED) ---------- */
+        /* ---------- UI refs ---------- */
         const loginSection = document.getElementById('loginSection');
         const nameInput = document.getElementById('nameInput');
-        // FIX: 'startQuiz' ID
         const startQuizBtn = document.getElementById('startQuiz'); 
         const loginMsg = document.getElementById('loginMsg');
         const quizApp = document.getElementById('quizApp');
@@ -506,7 +505,7 @@
           userName = val; markAttempt(userName); beginQuiz();
         });
 
-        /* ---------- BEGIN QUIZ ---------- */
+        /* ---------- BEGIN QUIZ (Audio Play Fixed) ---------- */
         function beginQuiz(){
           questions = shuffle(BANK.slice()).slice(0,40).map(q => ({...q}));
           current = 0; correct = 0; wrong = 0; perTopic = {};
@@ -515,7 +514,13 @@
           loginSection.classList.add('hidden');
           quizApp.classList.remove('hidden');
 
-          try { fireworksAudio.volume = 0.01; } catch(e){} 
+          // ✅ FIX: Audio ko button click par start karne ki koshish (Browser Bypass)
+          try { 
+            fireworksAudio.volume = 0.01; 
+            fireworksAudio.play(); 
+          } catch(e){ 
+            console.warn("Audio Play blocked by browser:", e);
+          } 
 
           totalSecondsLeft = TOTAL_SECONDS; perQuestionSecondsLeft = PER_QUESTION_SECONDS;
           globalTimerEl.textContent = formatTime(totalSecondsLeft);
@@ -582,13 +587,17 @@
           startQuestionTimer();
         }
 
-        /* ---------- SELECT OPTION ---------- */
+        /* ---------- SELECT OPTION (Answer Comparison Fixed) ---------- */
         function selectOption(el, item){
           if(answeredThisQ) return;
           answeredThisQ = true;
           document.querySelectorAll('.option').forEach(o=> o.classList.add('disabled'));
-          const chosen = unescapeHtml(el.dataset.text);
-          if(chosen === item.a){
+          
+          // ✅ FIX: Chosen answer aur Correct Answer dono ko UNESCAPE kar ke compare karein
+          const chosen = unescapeHtml(el.dataset.text); 
+          const correctAnswer = unescapeHtml(item.a); 
+
+          if(chosen === correctAnswer){ 
             el.classList.add('correct');
             correct++;
             if(perTopic[item.topic]) perTopic[item.topic].correct++;
@@ -596,8 +605,12 @@
             el.classList.add('wrong');
             wrong++;
             if(perTopic[item.topic]) perTopic[item.topic].wrong++;
+            
+            // Sahi jawab ko GREEN dikhane ke liye
             document.querySelectorAll('.option').forEach(o=>{
-              if(unescapeHtml(o.dataset.text) === item.a) o.classList.add('correct');
+              if(unescapeHtml(o.dataset.text) === correctAnswer) {
+                o.classList.add('correct');
+              }
             });
           }
           nextBtn.disabled = false;
@@ -624,38 +637,42 @@
           const total = questions.length;
           const percent = Math.round((correct/total)*100);
 
+          // Decide celebration level
           if(percent >= 90){
+            // VIP
             showResultModal({
               title: "👑 VIP فتح! / VIP Victory!", 
               message: `زبردست! آپ نے ${percent}% حاصل کیے — VIP Celebration! / Amazing! You scored ${percent}% — VIP Celebration!`, 
               emoji: "👑", 
               type: "vip"
             });
+            // VIP sound using WebAudio
             try { playVIPMelody(); } catch(e){ console.warn(e); }
-            playVIPConfetti();
+            playVIPConfetti(); 
           } else if(percent >= 70){
+            // Normal celebration
             showResultModal({
               title: "🎉 مبارک ہو! / Congratulations!", 
               message: `آپ نے ${percent}% حاصل کیے — شاندار کارکردگی! / You scored ${percent}% — Excellent Performance!`, 
               emoji: "🎊",
               type: "success"
             });
-            try { fireworksAudio.volume = 0.5; } catch(e){} 
-            playFireworks();
+            // Audio ko result par dobara chalu karein
+            try { fireworksAudio.currentTime = 0; fireworksAudio.volume = 0.5; fireworksAudio.play(); } catch(e){}
+            playFireworks(); 
           } else {
+            // Better luck
             showResultModal({
               title: "😌 کوشش جاری رکھیں / Keep Trying", 
               message: `آپ نے ${percent}% حاصل کیے۔ کوشش کریں، آپ بہتر کریں گے! / You scored ${percent}%. Keep trying, you can do better!`, 
               emoji: "✨",
               type: "soft"
             });
+            // Soft confetti
             playSoftConfetti();
           }
 
-          setTimeout(() => {
-            try { fireworksAudio.volume = 0.01; } catch(e){}
-          }, 6000); 
-
+          // Open result in new tab (detailed)
           const resultWindow = window.open('','_blank');
           const resultHtml = `
             <html lang="en" dir="ltr">
@@ -681,6 +698,7 @@
           resultWindow.document.write(resultHtml);
           resultWindow.document.close();
 
+          // Send results via WhatsApp and Gmail
           const waMsg = encodeURIComponent(`Quiz Result for ${userName}: ${percent}% — Correct:${correct}, Wrong:${wrong}`);
           window.open(`https://wa.me/${FIXED_WHATSAPP}?text=${waMsg}`, '_blank');
           const mailMsg = encodeURIComponent(`Quiz Result for ${userName}: ${percent}% — Correct:${correct}, Wrong:${wrong}`);
@@ -693,6 +711,7 @@
           modalMessage.textContent = message || "";
           modalEmoji.textContent = emoji || "🎉";
           modalMessage.classList.remove('good','bad');
+          // style
           if(type === 'vip') {
             modalMessage.classList.add('good');
             resultModal.querySelector('.modal-card').classList.add('vip-glow');
@@ -704,10 +723,10 @@
           resultModal.classList.remove('hidden');
 
           modalClose.onclick = ()=> { resultModal.classList.add('hidden'); };
-          modalDetails.onclick = ()=> { resultModal.classList.add('hidden'); }; 
+          modalDetails.onclick = ()=> { resultModal.classList.add('hidden'); }; // detailed tab already opened
         }
 
-        /* ---------- FIREWORKS / CONFETTI ---------- */
+        /* ---------- FIREWORKS / CONFETTI (Syntax Fixed) ---------- */
         function playFireworks(){
           fireworksContainer.classList.remove('hidden');
           const colors = ['#ff6b6b','#ffd166','#06d6a0','#4ecdc4','#9b5de5','#f15bb5'];
@@ -769,7 +788,7 @@
             setTimeout(()=> el.remove(), 8000);
           }
           setTimeout(()=> fireworksContainer.classList.add('hidden'), 7800);
-        }
+        } 
 
         /* ---------- VIP Melodic Flourish (WebAudio) ---------- */
         function playVIPMelody(){
@@ -777,7 +796,9 @@
           const AudioCtx = window.AudioContext || window.webkitAudioContext;
           const ctx = new AudioCtx();
           const now = ctx.currentTime;
-          const freqs = [880, 1100, 1320, 1760]; 
+
+          // create a bright harmonic motif
+          const freqs = [880, 1100, 1320, 1760]; // A5, C#6, E6, A6-ish
           freqs.forEach((f, i) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -793,6 +814,7 @@
             osc.stop(now + i*0.08 + 1.1);
           });
 
+          // small bell overlay
           const bell = ctx.createOscillator();
           const bellGain = ctx.createGain();
           bell.type = 'sine';
@@ -805,6 +827,7 @@
           bellGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
           bell.stop(now + 2.05);
 
+          // close AudioContext after a while to release resources
           setTimeout(()=> { try{ ctx.close(); } catch(e){} }, 3000);
         }
 
