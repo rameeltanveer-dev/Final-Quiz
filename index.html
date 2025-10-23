@@ -379,7 +379,7 @@
             </div>
         </div>
 
-        <audio id="fireworksAudio" src="fireworks-10-419029.mp3"></audio>
+        <audio id="fireworksAudio" src="fireworks-10-419029.mp3" loop></audio>
 
         <footer>
             <p class="muted-text">Designed by <a href="https://github.com/rameeltanveer-dev"><strong>Rameel Tanveer</strong></a> | &copy; 2025 All rights reserved.</p>
@@ -387,7 +387,7 @@
     </div>
     
     <script>
-        /* script.js — FINAL CODE WITH ALL FIXES (Audio, Celebration, Local Storage, and Answer Comparison) */
+        /* script.js — FINAL CODE WITH ALL FIXES AND CELEBRATION TIMING */
 
         /* ---------- CONFIG ---------- */
         const TOTAL_MINUTES = 40;
@@ -505,7 +505,7 @@
           userName = val; markAttempt(userName); beginQuiz();
         });
 
-        /* ---------- BEGIN QUIZ (Audio Play Fixed) ---------- */
+        /* ---------- BEGIN QUIZ (Audio Muted) ---------- */
         function beginQuiz(){
           questions = shuffle(BANK.slice()).slice(0,40).map(q => ({...q}));
           current = 0; correct = 0; wrong = 0; perTopic = {};
@@ -514,9 +514,9 @@
           loginSection.classList.add('hidden');
           quizApp.classList.remove('hidden');
 
-          // ✅ FIX: Audio ko button click par start karne ki koshish (Browser Bypass)
+          // FIX: Audio ko shuru mein 'mute' kar diya, lekin play kiya taake browser allowed kare
           try { 
-            fireworksAudio.volume = 0.01; 
+            fireworksAudio.volume = 0; // Volume 0 set kiya
             fireworksAudio.play(); 
           } catch(e){ 
             console.warn("Audio Play blocked by browser:", e);
@@ -562,7 +562,8 @@
           wrong++;
           if(perTopic[item.topic]) perTopic[item.topic].wrong++;
           document.querySelectorAll('.option').forEach(o=>{
-            if(o.dataset.text === item.a) o.classList.add('correct');
+            // Use unescapeHtml for comparison here too for consistency, though it might not be strictly needed for item.a here
+            if(unescapeHtml(o.dataset.text) === unescapeHtml(item.a)) o.classList.add('correct');
             o.classList.add('disabled');
           });
           answeredThisQ = true;
@@ -593,7 +594,7 @@
           answeredThisQ = true;
           document.querySelectorAll('.option').forEach(o=> o.classList.add('disabled'));
           
-          // ✅ FIX: Chosen answer aur Correct Answer dono ko UNESCAPE kar ke compare karein
+          // FIX: Chosen answer aur Correct Answer dono ko UNESCAPE kar ke compare karein
           const chosen = unescapeHtml(el.dataset.text); 
           const correctAnswer = unescapeHtml(item.a); 
 
@@ -631,49 +632,22 @@
           } else finishQuiz();
         }
 
-        /* ---------- FINISH QUIZ ---------- */
+        /* ---------- FINISH QUIZ (Celebration Timing Fixed) ---------- */
         function finishQuiz(){
           stopGlobalTimer(); stopQuestionTimer();
           const total = questions.length;
           const percent = Math.round((correct/total)*100);
 
-          // Decide celebration level
-          if(percent >= 90){
-            // VIP
-            showResultModal({
-              title: "👑 VIP فتح! / VIP Victory!", 
-              message: `زبردست! آپ نے ${percent}% حاصل کیے — VIP Celebration! / Amazing! You scored ${percent}% — VIP Celebration!`, 
-              emoji: "👑", 
-              type: "vip"
-            });
-            // VIP sound using WebAudio
-            try { playVIPMelody(); } catch(e){ console.warn(e); }
-            playVIPConfetti(); 
-          } else if(percent >= 70){
-            // Normal celebration
-            showResultModal({
-              title: "🎉 مبارک ہو! / Congratulations!", 
-              message: `آپ نے ${percent}% حاصل کیے — شاندار کارکردگی! / You scored ${percent}% — Excellent Performance!`, 
-              emoji: "🎊",
-              type: "success"
-            });
-            // Audio ko result par dobara chalu karein
-            try { fireworksAudio.currentTime = 0; fireworksAudio.volume = 0.5; fireworksAudio.play(); } catch(e){}
-            playFireworks(); 
-          } else {
-            // Better luck
-            showResultModal({
-              title: "😌 کوشش جاری رکھیں / Keep Trying", 
-              message: `آپ نے ${percent}% حاصل کیے۔ کوشش کریں، آپ بہتر کریں گے! / You scored ${percent}%. Keep trying, you can do better!`, 
-              emoji: "✨",
-              type: "soft"
-            });
-            // Soft confetti
-            playSoftConfetti();
-          }
-
-          // Open result in new tab (detailed)
+          // 1. OPEN RESULTS AND SEND LINKS FIRST
           const resultWindow = window.open('','_blank');
+          
+          // Send results via WhatsApp and Gmail
+          const waMsg = encodeURIComponent(`Quiz Result for ${userName}: ${percent}% — Correct:${correct}, Wrong:${wrong}`);
+          window.open(`https://wa.me/${FIXED_WHATSAPP}?text=${waMsg}`, '_blank');
+          const mailMsg = encodeURIComponent(`Quiz Result for ${userName}: ${percent}% — Correct:${correct}, Wrong:${wrong}`);
+          window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${FIXED_EMAIL}&su=CSS Quiz Result&body=${mailMsg}`, '_blank');
+          
+          // Detailed Result Window HTML
           const resultHtml = `
             <html lang="en" dir="ltr">
             <head><meta charset="utf-8"><title>Quiz Result — ${escapeHtml(userName)}</title>
@@ -698,11 +672,39 @@
           resultWindow.document.write(resultHtml);
           resultWindow.document.close();
 
-          // Send results via WhatsApp and Gmail
-          const waMsg = encodeURIComponent(`Quiz Result for ${userName}: ${percent}% — Correct:${correct}, Wrong:${wrong}`);
-          window.open(`https://wa.me/${FIXED_WHATSAPP}?text=${waMsg}`, '_blank');
-          const mailMsg = encodeURIComponent(`Quiz Result for ${userName}: ${percent}% — Correct:${correct}, Wrong:${wrong}`);
-          window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${FIXED_EMAIL}&su=CSS Quiz Result&body=${mailMsg}`, '_blank');
+          // 2. RUN CELEBRATIONS AND MODAL
+          if(percent >= 90){
+            // VIP
+            showResultModal({
+              title: "👑 VIP فتح! / VIP Victory!", 
+              message: `زبردست! آپ نے ${percent}% حاصل کیے — VIP Celebration! / Amazing! You scored ${percent}% — VIP Celebration!`, 
+              emoji: "👑", 
+              type: "vip"
+            });
+            try { playVIPMelody(); } catch(e){ console.warn(e); }
+            playVIPConfetti(); 
+          } else if(percent >= 70){
+            // Normal celebration
+            showResultModal({
+              title: "🎉 مبارک ہو! / Congratulations!", 
+              message: `آپ نے ${percent}% حاصل کیے — شاندار کارکردگی! / You scored ${percent}% — Excellent Performance!`, 
+              emoji: "🎊",
+              type: "success"
+            });
+            // FIX: Audio ko un-mute karein aur chalu karein
+            try { fireworksAudio.currentTime = 0; fireworksAudio.volume = 0.5; fireworksAudio.play(); } catch(e){}
+            playFireworks(); 
+          } else {
+            // Better luck
+            showResultModal({
+              title: "😌 کوشش جاری رکھیں / Keep Trying", 
+              message: `آپ نے ${percent}% حاصل کیے۔ کوشش کریں، آپ بہتر کریں گے! / You scored ${percent}%. Keep trying, you can do better!`, 
+              emoji: "✨",
+              type: "soft"
+            });
+            // Soft confetti. Audio still muted.
+            playSoftConfetti();
+          }
         }
 
         /* ---------- MODAL (animated result) ---------- */
