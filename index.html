@@ -387,7 +387,7 @@
     </div>
     
     <script>
-        /* script.js — FINAL CODE WITH ALL FIXES AND CELEBRATION TIMING */
+        /* script.js — FINAL CODE WITH ALL ESCAPING FIXES */
 
         /* ---------- CONFIG ---------- */
         const TOTAL_MINUTES = 40;
@@ -589,19 +589,24 @@
         }
 
         /* ---------------------------------------------------- */
-        /* ---------- SELECT OPTION (FIXED) ------------------- */
+        /* ---------- SELECT OPTION (FINAL FIX) --------------- */
         /* ---------------------------------------------------- */
         function selectOption(el, item){
           if(answeredThisQ) return;
           answeredThisQ = true;
           document.querySelectorAll('.option').forEach(o=> o.classList.add('disabled'));
           
-          // FIX: Chosen answer aur Correct Answer dono ko UNESCAPE kar ke compare karein
           const chosenEscaped = el.dataset.text; 
-          const chosenUnescaped = unescapeHtml(chosenEscaped); 
           const correctAnswerUnescaped = unescapeHtml(item.a); 
+          
+          // اب ہم DOM سے براہ راست ٹیکسٹ لیں گے کیونکہ براؤزر نے اسے صحیح طریقے سے Unescape کر دیا ہوگا 
+          const chosenTextContent = el.textContent.trim(); 
+          
+          // ہم موازنہ کے لیے دونوں کو ایک ہی حالت میں لائیں گے (دونوں کے لیے unescaped value)
+          const chosenFinal = unescapeHtml(chosenTextContent); 
+          const correctFinal = unescapeHtml(correctAnswerUnescaped);
 
-          if(chosenUnescaped === correctAnswerUnescaped){ 
+          if(chosenFinal === correctFinal){ 
             // اگر جواب صحیح ہے
             el.classList.add('correct');
             correct++;
@@ -614,8 +619,9 @@
             
             // Sahi jawab ko GREEN dikhane ke liye
             document.querySelectorAll('.option').forEach(o=>{
-                // FIX: یہاں بھی ڈیٹا ایٹریبیوٹ کی ان ایسکیپڈ ویلیو سے موازنہ کیا جائے گا
-              if(unescapeHtml(o.dataset.text) === correctAnswerUnescaped) {
+              // یہاں بھی DOM ٹیکسٹ کو استعمال کریں گے تاکہ براؤزر کی Escape/Unescape پر انحصار ختم ہو جائے
+              const optionTextFinal = unescapeHtml(o.textContent.trim());
+              if(optionTextFinal === correctFinal) {
                 o.classList.add('correct');
               }
             });
@@ -841,9 +847,15 @@
           setTimeout(()=> { try{ ctx.close(); } catch(e){} }, 3000);
         }
 
-        /* ---------- UTILITIES ---------- */
+        /* ---------- UTILITIES (HTML escaping functions) ---------- */
         function escapeHtml(str){ return String(str).replace(/[&<>"'`=\/]/g, function(s){ return ({ '&':"&amp;", '<':"&lt;", '>':"&gt;", '"':"&quot;", "'":"&#39;", '/':"&#x2F;", '`':"&#x60;", '=':"&#x3D;"}[s]); }); }
-        function unescapeHtml(s){ return String(s).replace(/&amp;|&lt;|&gt;|&quot;|&#39;|&#x2F;|&#x60;|&#x3D;/g, function(m){ return ({ "&amp;":"&", "&lt;":"<", "&gt;":">", "&quot;":'"', "&#39;":"'", "&#x2F;":"/", "&#x60;":"`", "&#x3D;":"=" }[m]); }); }
+        
+        // یہ unescape فنکشن زیادہ بھروسے کے قابل ہے اور آپ کے مسئلے کو حل کرے گا
+        function unescapeHtml(s){ 
+            const temp = document.createElement('div');
+            temp.innerHTML = s;
+            return temp.textContent || temp.innerText || '';
+        }
     </script>
     
 </body>
