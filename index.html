@@ -588,28 +588,34 @@
           startQuestionTimer();
         }
 
-        /* ---------- SELECT OPTION (Answer Comparison Fixed) ---------- */
+        /* ---------------------------------------------------- */
+        /* ---------- SELECT OPTION (FIXED) ------------------- */
+        /* ---------------------------------------------------- */
         function selectOption(el, item){
           if(answeredThisQ) return;
           answeredThisQ = true;
           document.querySelectorAll('.option').forEach(o=> o.classList.add('disabled'));
           
           // FIX: Chosen answer aur Correct Answer dono ko UNESCAPE kar ke compare karein
-          const chosen = unescapeHtml(el.dataset.text); 
-          const correctAnswer = unescapeHtml(item.a); 
+          const chosenEscaped = el.dataset.text; 
+          const chosenUnescaped = unescapeHtml(chosenEscaped); 
+          const correctAnswerUnescaped = unescapeHtml(item.a); 
 
-          if(chosen === correctAnswer){ 
+          if(chosenUnescaped === correctAnswerUnescaped){ 
+            // اگر جواب صحیح ہے
             el.classList.add('correct');
             correct++;
             if(perTopic[item.topic]) perTopic[item.topic].correct++;
           } else {
+            // اگر جواب غلط ہے
             el.classList.add('wrong');
             wrong++;
             if(perTopic[item.topic]) perTopic[item.topic].wrong++;
             
             // Sahi jawab ko GREEN dikhane ke liye
             document.querySelectorAll('.option').forEach(o=>{
-              if(unescapeHtml(o.dataset.text) === correctAnswer) {
+                // FIX: یہاں بھی ڈیٹا ایٹریبیوٹ کی ان ایسکیپڈ ویلیو سے موازنہ کیا جائے گا
+              if(unescapeHtml(o.dataset.text) === correctAnswerUnescaped) {
                 o.classList.add('correct');
               }
             });
@@ -617,6 +623,8 @@
           nextBtn.disabled = false;
           stopQuestionTimer();
         }
+        /* ---------------------------------------------------- */
+
 
         /* ---------- NAVIGATION ---------- */
         nextBtn.addEventListener('click', ()=> { if(!nextBtn.disabled) goNext(); });
